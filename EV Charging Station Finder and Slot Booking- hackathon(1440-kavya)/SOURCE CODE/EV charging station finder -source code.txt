@@ -1,0 +1,100 @@
+import datetime
+
+class ChargingStation:
+    def __init__(self, name, location, slots):
+        self.name = name
+        self.location = location
+        self.slots = slots
+        self.bookings = {}
+
+    def find_available_slot(self, date):
+        available_slots = [slot for slot in self.slots if date not in self.bookings.get(slot, [])]
+        return available_slots
+
+    def book_slot(self, slot, date):
+        if slot in self.find_available_slot(date):
+            if slot not in self.bookings:
+                self.bookings[slot] = []
+            self.bookings[slot].append(date)
+            print(f"Slot {slot} booked successfully on {date} at {self.name}!")
+            return True
+        else:
+            print(f"Slot {slot} is already booked on {date} at {self.name}.")
+            return False
+
+    def get_booked_slots(self):
+        return self.bookings
+
+
+class EVChargingSystem:
+    def __init__(self):
+        self.stations = []
+
+    def add_station(self, name, location, slots):
+        station = ChargingStation(name, location, slots)
+        self.stations.append(station)
+
+    def find_stations_by_location(self, location):
+        return [station for station in self.stations if station.location == location]
+
+    def filter_stations(self, filters):
+        filtered_stations = self.stations
+        if 'location' in filters:
+            filtered_stations = self.find_stations_by_location(filters['location'])
+        return filtered_stations
+
+
+def main():
+    system = EVChargingSystem()
+
+    # Adding charging stations
+    system.add_station("Station A", "Downtown", ["Slot 1", "Slot 2", "Slot 3"])
+    system.add_station("Station B", "Uptown", ["Slot 1", "Slot 2"])
+
+    # User input for location
+    location = input("Enter the location to find stations: ")
+
+    # User input for date (default is today's date)
+    date_input = input("Enter the date for booking (YYYY-MM-DD) or press Enter for today's date: ")
+    if date_input:
+        date = datetime.datetime.strptime(date_input, "%Y-%m-%d").date()
+    else:
+        date = datetime.date.today()
+
+    # Find stations in the specified location
+    stations = system.filter_stations({'location': location})
+    if stations:
+        print(f"\nAvailable stations in {location}:")
+        for station in stations:
+            print(f"- {station.name}")
+
+        # Book a slot at a station
+        station_name = input("Enter the station name to book a slot: ")
+        selected_station = next((s for s in stations if s.name == station_name), None)
+
+        if selected_station:
+            available_slots = selected_station.find_available_slot(date)
+            if available_slots:
+                print(f"Available slots on {date}: {', '.join(available_slots)}")
+                slot_to_book = input("Enter the slot you want to book: ")
+                selected_station.book_slot(slot_to_book, date)
+            else:
+                print("No available slots for the selected date.")
+        else:
+            print(f"No station found with the name {station_name} in {location}.")
+    else:
+        print(f"No charging stations found in {location}.")
+        return  # Exit if no stations found
+
+    # Check booked slots if there was a successful station selection
+    if selected_station:
+        view_bookings = input("Do you want to view booked slots? (yes/no): ")
+        if view_bookings.lower() == "yes":
+            print(f"\nBooked slots at {selected_station.name}:")
+            booked_slots = selected_station.get_booked_slots()
+            for slot, dates in booked_slots.items():
+                print(f"{slot}: {', '.join([str(date) for date in dates])}")
+
+
+if __name__ == "__main__":
+    main()
